@@ -1,0 +1,6 @@
+yt_dlp
+werkzeug
+ffmpeg-python
+flask==3.0.3
+groq
+dotenv
