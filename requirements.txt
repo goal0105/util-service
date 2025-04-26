@@ -4,3 +4,4 @@ ffmpeg-python
 flask==3.0.3
 groq
 dotenv
+gunicorn
