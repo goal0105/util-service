@@ -1,13 +1,11 @@
 
 from downloader import Download
 from flask import Flask, request, jsonify, abort
-import os
 import tempfile
 from groq import Groq
 from dotenv import load_dotenv
 import logging
 from datetime import datetime
-from pathlib import Path
 
 app = Flask(__name__)
 downloader = Download()
@@ -76,26 +74,23 @@ def audio_translation():
     if "youtube" in audio_url.lower():
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
+                
+                time_stampe = datetime.now().strftime("%Y.%m.%d %H:%M:S")
+                print(f"{time_stampe} : Youtube Translation Processing\n")
 
                 youtube_url = canonical_youtube_url(audio_url)
                 print(f"Youtube URL : {youtube_url}")
                                 
                 # ── 1.  Download the file safely to a temp location ────────────────
-                time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                logger.info(f"{time_stamp} Downloading Youtube started.")
-                print(f'{time_stamp } Downloading Youtube started.')
+                print("Downloading Youtube started.\n")
 
                 downloaded_path = downloader.download_youtube_audio(youtube_url, temp_dir)
                 
-                logger.info(f"Donloaded Path : {downloaded_path}")
-                print(f"Downloaded Path : {downloaded_path}")
-
-                logger.info(f"{time_stamp} : Downloading Youtube completed successfully.")
-                print(f"{time_stamp} : Donwloading Youtube completed successfully.")
+                print(f"Downloaded Path : {downloaded_path}\n")
+                print("Donwloading Youtube completed successfully.\n")
 
                 # ── 2.  Translation with Groq ────────────────────────────────────
-                logger.info(f"{time_stamp} : Audio Translation Started.")
-                print(f"{time_stamp} : Audio Translation Started.")
+                print("Audio Translation Started.\n")
                 
                 with open(downloaded_path, "rb") as file:
                     translation = groq_client.audio.translations.create(
@@ -107,8 +102,7 @@ def audio_translation():
                 
                     print(translation.text)
 
-                logger.info(f"{time_stamp} : Audio Translation Completed.")
-                print(f"{time_stamp} : Audio Translation Completed.")        
+                print("\nAudio Translation Completed.\n")        
             
         except Exception as e:
             abort(400, description=f"Downloading Youtube or Translation Failed\n: {e}")

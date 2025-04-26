@@ -3,8 +3,7 @@ import logging
 from pathlib import Path
 import yt_dlp
 from yt_dlp.utils import DownloadError
-from werkzeug.exceptions import BadRequest, InternalServerError
-import tempfile
+from werkzeug.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
 
