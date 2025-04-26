@@ -20,7 +20,7 @@ class Download:
 
     def download_youtube_audio(self, url: str, temp_dir : str) -> str:
         app_dir = Path(__file__).resolve().parent
-        cookie_file = os.path.join(app_dir, 'uploads', 'youtube', 'cookies.txt')
+        cookie_file = os.path.join(app_dir, 'youtube', 'cookies.txt')
         
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
