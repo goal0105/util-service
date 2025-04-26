@@ -75,22 +75,22 @@ def audio_translation():
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 
-                time_stampe = datetime.now().strftime("%Y.%m.%d %H:%M:S")
-                print(f"{time_stampe} : Youtube Translation Processing\n")
+                time_stampe = datetime.now().strftime("%Y.%m.%d %H:%M:%S")
+                print(f"\n\n{time_stampe} : Youtube Translation Processing\n")
 
                 youtube_url = canonical_youtube_url(audio_url)
                 print(f"Youtube URL : {youtube_url}")
                                 
                 # ── 1.  Download the file safely to a temp location ────────────────
-                print("Downloading Youtube started.\n")
+                print("Downloading Youtube started.")
 
                 downloaded_path = downloader.download_youtube_audio(youtube_url, temp_dir)
                 
                 print(f"Downloaded Path : {downloaded_path}\n")
-                print("Donwloading Youtube completed successfully.\n")
+                print("Donwloading Youtube completed successfully.")
 
                 # ── 2.  Translation with Groq ────────────────────────────────────
-                print("Audio Translation Started.\n")
+                print("Audio Translation Started.")
                 
                 with open(downloaded_path, "rb") as file:
                     translation = groq_client.audio.translations.create(
