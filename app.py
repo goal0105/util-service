@@ -11,15 +11,12 @@ downloader = Download()
 
 load_dotenv()  # pulls variables from .env into process env
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-if not GROQ_API_KEY:
-    raise RuntimeError("Set GROQ_API_KEY in .env or the environment")
-groq_client = Groq(GROQ_API_KEY)
+groq_client = Groq()
 
 @app.route("/audio_transcription", methods=["POST"])
 def audio_transcription():
     """
-    POST  { "audio_url": "https://example.com/file.mp3" }
+    POST  { "audio_url": "https://www.youtube.com/watch?v=eWRfhZUzrAc" }
     └─▶  { "text": "…transcript…" }
     """
     if not request.is_json:
