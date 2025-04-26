@@ -5,16 +5,63 @@ import os
 import tempfile
 from groq import Groq
 from dotenv import load_dotenv
+import logging
+from datetime import datetime
+from pathlib import Path
 
 app = Flask(__name__)
 downloader = Download()
+logger = logging.getLogger(__name__)
 
 load_dotenv()  # pulls variables from .env into process env
 
 groq_client = Groq()
 
-@app.route("/audio_transcription", methods=["POST"])
-def audio_transcription():
+@app.route("/information", methods=["GET"])
+def server_info():
+     return jsonify("Utility Service"), 200
+
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+
+def canonical_youtube_url(url: str, keep_params=('v',)) -> str:
+    """
+    Return a cleaned-up YouTube URL that keeps only the query
+    parameters listed in *keep_params* (defaults to just 'v').
+    
+    Examples
+    --------
+    >>> canonical_youtube_url(
+    ...     "https://www.youtube.com/watch?v=JiJeZOHx0ow&pp=0gcJCdgAo7VqN5tD")
+    'https://www.youtube.com/watch?v=JiJeZOHx0ow'
+    
+    >>> canonical_youtube_url(
+    ...     "https://youtu.be/JiJeZOHx0ow?t=60", keep_params=())
+    'https://youtu.be/JiJeZOHx0ow'
+    """
+    parsed = urlparse(url)
+    
+    # Short youtu.be links rarely need any changes—just drop the query/fragment.
+    if parsed.netloc.endswith("youtu.be"):
+        return f"https://{parsed.netloc}{parsed.path}"
+    
+    # Long form: https://www.youtube.com/watch?v=...
+    if parsed.netloc.endswith("youtube.com") and parsed.path == "/watch":
+        qs = parse_qs(parsed.query)
+        # Retain only the desired parameters (order-preserving).
+        new_qs = [(k, v) for k, vs in qs.items() for v in vs if k in keep_params]
+        new_query = urlencode(new_qs, doseq=True)
+        cleaned = parsed._replace(query=new_query, fragment="")
+        return urlunparse(cleaned)
+    
+    # Anything else: return untouched.
+    return url
+
+
+"""
+Translate from audio url using Groq.
+"""
+@app.route("/audio/translation", methods=["POST"])
+def audio_translation():
     """
     POST  { "audio_url": "https://www.youtube.com/watch?v=eWRfhZUzrAc" }
     └─▶  { "text": "…transcript…" }
@@ -26,31 +73,49 @@ def audio_transcription():
     if not audio_url:
         abort(400, description="`audio_url` is required")
 
-    # ── 1.  Download the file safely to a temp location ────────────────
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            downloaded_path = downloader.download_youtube_audio(audio_url, temp_dir)
-    except Exception as e:
-        abort(400, description=f"Downloading Youtube Failed\n: {e}")
-        
-    # ── 2.  Transcribe with Whisper ────────────────────────────────────
-    try:
-        with open(downloaded_path, "rb") as file:
-            translation = groq_client.audio.translations.create(
-                file=(downloaded_path, file.read()),
-                model="whisper-large-v3",
-                response_format="json",  # Optional
-                temperature=0.0  # Optional
-                )
-        
-            print(translation.text)
-            
-    except Exception as e:
-        abort(400, description=f"Couldn't transcribe: {e}")
-    finally:
-        os.remove(downloaded_path)   # cleanup no matter what
+    if "youtube" in audio_url.lower():
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
 
-    return jsonify(transcription=translation.text), 200
+                youtube_url = canonical_youtube_url(audio_url)
+                print(f"Youtube URL : {youtube_url}")
+                                
+                # ── 1.  Download the file safely to a temp location ────────────────
+                time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                logger.info(f"{time_stamp} Downloading Youtube started.")
+                print(f'{time_stamp } Downloading Youtube started.')
+
+                downloaded_path = downloader.download_youtube_audio(youtube_url, temp_dir)
+                
+                logger.info(f"Donloaded Path : {downloaded_path}")
+                print(f"Downloaded Path : {downloaded_path}")
+
+                logger.info(f"{time_stamp} : Downloading Youtube completed successfully.")
+                print(f"{time_stamp} : Donwloading Youtube completed successfully.")
+
+                # ── 2.  Translation with Groq ────────────────────────────────────
+                logger.info(f"{time_stamp} : Audio Translation Started.")
+                print(f"{time_stamp} : Audio Translation Started.")
+                
+                with open(downloaded_path, "rb") as file:
+                    translation = groq_client.audio.translations.create(
+                        file=(downloaded_path, file.read()),
+                        model="whisper-large-v3",
+                        response_format="json",  # Optional
+                        temperature=0.0  # Optional
+                        )
+                
+                    print(translation.text)
+
+                logger.info(f"{time_stamp} : Audio Translation Completed.")
+                print(f"{time_stamp} : Audio Translation Completed.")        
+            
+        except Exception as e:
+            abort(400, description=f"Downloading Youtube or Translation Failed\n: {e}")
+    else : 
+        print("TODO")
+
+    return jsonify(translation=translation.text), 200
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=False, host="0.0.0.0", port=5000)

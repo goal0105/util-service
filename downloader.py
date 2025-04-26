@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 import logging
 from pathlib import Path
 import yt_dlp
@@ -8,6 +7,9 @@ from werkzeug.exceptions import BadRequest, InternalServerError
 import tempfile
 
 logger = logging.getLogger(__name__)
+
+MAX_DURATION_MINUTES = 30
+MAX_FILE_SIZE_MB = 100
 
 class Download:
     def __init__(self, output_dir=os.getcwd(),  debug=False):
@@ -47,12 +49,16 @@ class Download:
                 if not info:
                     raise BadRequest("Could not fetch video information")
                 
+                duration = info.get('duration', 0)
+                if duration > MAX_DURATION_MINUTES * 60:
+                    raise BadRequest(f"Video exceeds maximum duration of {MAX_DURATION_MINUTES} minutes")
+
+                filesize = info.get('filesize', 0)
+                if filesize and filesize > MAX_FILE_SIZE_MB * 1024 * 1024:
+                    raise BadRequest(f"File size exceeds {MAX_FILE_SIZE_MB}MB limit")
+                
                 # Now download
                 downloaded_info = ydl.extract_info(url, download=True)
-                
-                time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                logger.info(time_stamp +"Download completed successfully.")
-                print(time_stamp +": Download completed successfully.")
                 
                 return ydl.prepare_filename(downloaded_info)  # download path
 
@@ -71,38 +77,4 @@ class Download:
                     raise BadRequest("Authentication failed. Server cookies may need to be updated.")
             else:
                 raise BadRequest(f"Failed to download video: {str(e)}")
-    
-    def download_from_url(self, url) -> None:
-        try:
-            if "youtube" in url.lower():
-                
-                """Download YouTube audio and convert to WAV format"""
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    try:
-
-                        # app_dir = Path(__file__).resolve().parent
-                        # download_dir = app_dir / self.uploads_dir
-
-                        # Download Youtube audio
-                        downloaded_path = self.download_youtube_audio(url, temp_dir)
-                    
-                        if not os.path.exists(downloaded_path):
-                            raise InternalServerError("Failed to download audio")
-
-                        print(f"Downloaded audio path: {downloaded_path}")
-                        
-                    except Exception as e:
-                        logger.error(f"Youtube processing error: {str(e)}", exc_info=True)
-                        print(f"Youtube processing error: {str(e)}")
-                        if isinstance(e, (BadRequest, InternalServerError)):
-                            raise
-                        raise InternalServerError(f"Failed to process video: {str(e)}")
-                
-            else :   # if not youtube
-                """Download audio from URL"""
-                print("Downloading audio from URL...")
-                
-        except Exception as e:
-            print(f"Error downloading file: {e}")
-            return None
 
