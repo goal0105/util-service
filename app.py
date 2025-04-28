@@ -103,7 +103,7 @@ def audio_translation():
                     print(translation.text)
 
                 print("\nAudio Translation Completed.\n")                            
-                return jsonify(translation=translation.text), 200
+                return jsonify(text=translation.text), 200
             
         except Exception as e:
             abort(400, description=f"Downloading Youtube or Translation Failed\n: {e}")
