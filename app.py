@@ -1,11 +1,17 @@
-
-from downloader import Download
+from __future__ import annotations
 from flask import Flask, request, jsonify, abort
-import tempfile
 from groq import Groq
 from dotenv import load_dotenv
-import logging
+from downloader import Download
 from datetime import datetime
+from urllib.parse import urlparse, urljoin, parse_qs, urlencode, urlunparse
+
+import html
+import logging
+import re
+import requests
+import tempfile
+
 
 app = Flask(__name__)
 downloader = Download()
@@ -15,11 +21,78 @@ load_dotenv()  # pulls variables from .env into process env
 
 groq_client = Groq()
 
+META_REFRESH_RE = re.compile(
+    r'<meta[^>]+http-equiv=["\']?refresh["\']?[^>]*content=["\']?\s*\d+\s*;\s*url=(.*?)["\'>]',
+    re.IGNORECASE
+)
+
+def _follow_meta_refresh(html_text: str, base_url: str) -> str | None:
+    """
+    Look for <meta http-equiv="refresh" …> and return the absolute URL, or None.
+    """
+    match = META_REFRESH_RE.search(html_text)
+    if not match:
+        return None
+    target = html.unescape(match.group(1).strip())
+    return urljoin(base_url, target)
+
+def resolve_url(url: str,
+                *,
+                timeout: float = 10.0,
+                max_hops: int = 10,
+                follow_meta: bool = False) -> str:
+    """
+    Return the final landing URL after following up to `max_hops` redirects.
+
+    Parameters
+    ----------
+    url : str
+        The starting URL.
+    timeout : float, default 10 s
+        Network timeout for each request.
+    max_hops : int, default 10
+        Safety limit to avoid redirect loops.
+    follow_meta : bool, default False
+        Also chase HTML meta-refresh redirects (one extra GET at most).
+    """
+    session = requests.Session()
+    session.max_redirects = max_hops       # extra guard
+
+    try:
+        # Try HEAD first – it’s lighter, but some sites forbid it.
+        resp = session.head(url,
+                            allow_redirects=True,
+                            timeout=timeout,
+                            headers={"User-Agent": "python-redirect-check/1.0"})
+        final_url = resp.url
+        if resp.is_redirect:               # still in a redirect chain
+            final_url = resp.headers["Location"]
+    except requests.exceptions.RequestException:
+        # Fall back to GET (handles sites that disallow HEAD)
+        resp = session.get(url,
+                           allow_redirects=True,
+                           timeout=timeout,
+                           headers={"User-Agent": "python-redirect-check/1.0"})
+        final_url = resp.url
+
+    # Optional: follow one level of <meta http-equiv="refresh"> in the landing page
+    if follow_meta and resp.ok and "text/html" in resp.headers.get("content-type", ""):
+        next_url = _follow_meta_refresh(resp.text, final_url)
+        if next_url:
+            # one extra GET to verify (avoids infinite loops)
+            try:
+                resp = session.get(next_url,
+                                   allow_redirects=True,
+                                   timeout=timeout)
+                final_url = resp.url
+            except requests.exceptions.RequestException:
+                pass
+
+    return final_url
+
 @app.route("/information", methods=["GET"])
 def server_info():
      return jsonify("Utility Service"), 200
-
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 def canonical_youtube_url(url: str, keep_params=('v',)) -> str:
     """
@@ -54,7 +127,6 @@ def canonical_youtube_url(url: str, keep_params=('v',)) -> str:
     # Anything else: return untouched.
     return url
 
-
 """
 Translate from audio url using Groq.
 """
@@ -71,14 +143,16 @@ def audio_translation():
     if not audio_url:
         abort(400, description="`audio_url` is required")
 
-    if "youtube" in audio_url.lower():
+    final_url = resolve_url(audio_url)
+
+    if "youtube" in final_url.lower():
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 
                 time_stampe = datetime.now().strftime("%Y.%m.%d %H:%M:%S")
                 print(f"\n\n{time_stampe} : Youtube Translation Processing\n")
 
-                youtube_url = canonical_youtube_url(audio_url)
+                youtube_url = canonical_youtube_url(final_url)
                 print(f"Youtube URL : {youtube_url}")
                                 
                 # ── 1.  Download the file safely to a temp location ────────────────
@@ -109,7 +183,6 @@ def audio_translation():
             abort(400, description=f"Downloading Youtube or Translation Failed\n: {e}")
     else : 
         print("TODO")
-
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=5000)
