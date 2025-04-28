@@ -1,17 +1,16 @@
 from __future__ import annotations
-from downloader import Download
 from flask import Flask, request, jsonify, abort
-import tempfile
 from groq import Groq
 from dotenv import load_dotenv
-import logging
+from downloader import Download
 from datetime import datetime
+from urllib.parse import urlparse, urljoin, parse_qs, urlencode, urlunparse
 
-import re
 import html
+import logging
+import re
 import requests
-from urllib.parse import urljoin
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+import tempfile
 
 
 app = Flask(__name__)
