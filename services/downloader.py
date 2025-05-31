@@ -18,9 +18,13 @@ class Download:
         os.makedirs(self.uploads_dir, exist_ok=True)
 
     def download_youtube_audio(self, url: str, temp_dir : str) -> str:
-        app_dir = Path(__file__).resolve().parent
-        cookie_file = os.path.join(app_dir, 'cookie', 'cookies.txt')
         
+        cookie_file = os.path.join(Path(__file__).resolve().parents[1], 'cookie', 'cookies.txt')
+        if not os.path.exists(cookie_file):
+            raise FileNotFoundError(f"Cookie file not found at {cookie_file}")
+
+        logger.info(f"Cookie file : {cookie_file}")
+       
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
             'outtmpl': os.path.join(temp_dir, '%(id)s.%(ext)s'),
