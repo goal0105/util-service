@@ -6,3 +6,5 @@ groq
 dotenv
 gunicorn
 requests
+supabase
+flask[async]

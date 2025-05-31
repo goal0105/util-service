@@ -1,0 +1,16 @@
+2025-05-30 18:31:24,871 - util-service - INFO - logger.py:118 - Added console handler with level: 10
+2025-05-30 18:31:24,871 - util-service - INFO - logger.py:119 - Log file will be created at: D:\Azulay\code\util-service\logs
+2025-05-30 18:33:20,392 - util-service - INFO - logger.py:118 - Added console handler with level: 10
+2025-05-30 18:33:20,392 - util-service - INFO - logger.py:119 - Log file will be created at: D:\Azulay\code\util-service\logs
+2025-05-30 18:33:20,628 - util-service - DEBUG - supabase.py:40 - Initializing Supabase connection
+2025-05-30 18:33:20,769 - util-service - DEBUG - supabase.py:44 - Database connection initialized with Supabase using SERVICE_ROLE_KEY
+2025-05-30 18:35:58,583 - util-service - INFO - logger.py:118 - Added console handler with level: 10
+2025-05-30 18:35:58,584 - util-service - INFO - logger.py:119 - Log file will be created at: D:\Azulay\code\util-service\logs
+2025-05-30 18:50:13,498 - util-service - INFO - logger.py:118 - Added console handler with level: 10
+2025-05-30 18:50:13,498 - util-service - INFO - logger.py:119 - Log file will be created at: D:\Azulay\code\util-service\logs
+2025-05-30 18:50:13,739 - util-service - DEBUG - supabase.py:40 - Initializing Supabase connection
+2025-05-30 18:50:13,886 - util-service - DEBUG - supabase.py:44 - Database connection initialized with Supabase using SERVICE_ROLE_KEY
+2025-05-30 18:58:08,613 - util-service - INFO - logger.py:118 - Added console handler with level: 10
+2025-05-30 18:58:08,613 - util-service - INFO - logger.py:119 - Log file will be created at: D:\Azulay\code\util-service\logs
+2025-05-30 18:58:08,850 - util-service - DEBUG - supabase.py:40 - Initializing Supabase connection
+2025-05-30 18:58:08,995 - util-service - DEBUG - supabase.py:44 - Database connection initialized with Supabase using SERVICE_ROLE_KEY

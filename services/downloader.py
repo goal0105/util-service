@@ -1,11 +1,9 @@
 import os
-import logging
 from pathlib import Path
 import yt_dlp
 from yt_dlp.utils import DownloadError
 from werkzeug.exceptions import BadRequest
-
-logger = logging.getLogger(__name__)
+from utils.logger import logger
 
 MAX_DURATION_MINUTES = 30
 MAX_FILE_SIZE_MB = 100
@@ -21,7 +19,7 @@ class Download:
 
     def download_youtube_audio(self, url: str, temp_dir : str) -> str:
         app_dir = Path(__file__).resolve().parent
-        cookie_file = os.path.join(app_dir, 'youtube', 'cookies.txt')
+        cookie_file = os.path.join(app_dir, 'cookie', 'cookies.txt')
         
         ydl_opts = {
             'format': 'bestaudio[ext=m4a]/bestaudio/best',
@@ -63,6 +61,7 @@ class Download:
 
         except DownloadError as e:
             error_msg = str(e).lower()
+            logger.error(f"Youtube downloading failed : {error_msg}")
             if "private video" in error_msg:
                 raise BadRequest("Private videos are not supported")
             elif "age restriction" in error_msg or "age-restricted" in error_msg:
@@ -76,4 +75,3 @@ class Download:
                     raise BadRequest("Authentication failed. Server cookies may need to be updated.")
             else:
                 raise BadRequest(f"Failed to download video: {str(e)}")
-
