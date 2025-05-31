@@ -8,3 +8,4 @@ gunicorn
 requests
 supabase
 flask[async]
+nest_asyncio
